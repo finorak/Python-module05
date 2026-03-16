@@ -5,7 +5,6 @@ from typing import Any
 class DataProcessor(ABC):
     def __init__(self) -> None:
         super().__init__()
-        self.data = None
 
     @abstractmethod
     def process(self, data: Any) -> str:
@@ -27,72 +26,125 @@ class DataProcessor(ABC):
 
 
 class NumericProcessor(DataProcessor):
+    def __init__(self) -> None:
+        super().__init__()
+        self.data: Any = None
+        self.is_valid: bool = True
+        self.is_digit: bool = False
+
     def process(self, data: Any) -> str:
         print(f"Processig data: {data}")
-        if self.validate(data):
-            self.data = data
-            print("Validation: Numeric data verified")
+        self.data = data
+        if not self.validate(data):
+            print("Validation: Data is not numeric")
+            self.is_valid = False
             return "False"
-        print("Validation: None Numeric Data")
+        print("Validation: Data is numeric")
         return "True"
 
     def validate(self, data: Any) -> bool:
+        data_el = 0
+        first_el = None
         try:
-            self.data_len = self.ft_len(data)
-            for index in range(self.data_len):
-                _ = data[index] + 1
+            for el in data:
+                if first_el is None:
+                    first_el = el
+                data_el += el
+            self.is_digit = False
             return True
-        except (TypeError, IndexError):
+        except Exception:
             pass
         try:
             _ = data + 1
+            self.is_digit = True
             return True
-        except Exception as e:
-            print("Error:", e)
+        except Exception:
+            pass
         return False
 
-    def format_ouput(self, result: str) -> str:
-        ...
+    def format_output(self, result: str) -> str:
+        if not self.is_valid:
+            print("Data provided is not a numeric")
+            return ""
+        res = ""
+        data_len = 1
+        data_sum = self.data
+        average = self.data
+        if not self.is_digit:
+            data_len = self.ft_len(self.data)
+            data_sum = self.ft_sum(self.data)
+            average = self.get_average(self.data)
+        res = f"Processed {data_len} numeric values, "
+        res += f"sum = {data_sum}, avg = {average}"
+        print("Output:", res)
+        return result
+
+    def ft_sum(self, lst: list[int] | None) -> int:
+        count = 0
+        if lst is None:
+            return 0
+        for el in lst:
+            count += el
+        return count
+
+    def get_average(self, lst: Any) -> float:
+        if self.is_digit:
+            return lst
+        lst_sum = self.ft_sum(lst)
+        return lst_sum / self.ft_len(lst)
 
 
 class TextProcessor(DataProcessor):
+    def __init__(self) -> None:
+        super().__init__()
+        self.data = None
+        self.is_valid = True
+
     def process(self, data: Any) -> str:
-        print(f"Processig data: {data}")
-        if not self.validate(data):
-            print("Error")
-            return "error"
+        print(f"Processig data: \"{data}\"")
         self.data = data
-        print("Success")
+        if not self.validate(data):
+            print("Validiation: Data not a text")
+            self.is_valid = False
+            return "Error"
+        self.data = data
+        print("Validiation: Text data verified")
         return "Success"
 
     def validate(self, data: Any) -> bool:
+        data_el = ""
         try:
             self.data_len = self.ft_len(data)
             for index in range(self.data_len):
-                _ = data[index] + ""
-            return True
-        except (TypeError, IndexError):
+                data_el += data[index]
+            return data_el == data
+        except Exception:
             pass
         try:
             _ = data + ""
             return True
-        except Exception as e:
-            print("error:", e)
+        except Exception:
+            pass
         return False
 
     def format_output(self, result: str) -> str:
+        if not self.is_valid:
+            print("Data provided is not a string")
+            return ""
         res = ""
         str_len = self.ft_len(self.data)
         word_count = self.word_count(self.data, str_len)
-        res = f"Processed text: {str_len} characters"
+        res = f"Processed text: {str_len} characters "
         res += f"{word_count} words"
         print("Output:", res)
-        return res
+        return result
 
-    def word_count(self, string: str, str_len: int) -> int:
+    def word_count(self, string: str | None, str_len: int) -> int:
         counter = 0
         index = 0
         sep = ("\t", "\r", "\f", " ", "\v", "\n")
+        if string is None:
+            return -1
         while index < str_len:
             char = string[index]
             count = False
@@ -109,19 +161,77 @@ class TextProcessor(DataProcessor):
 
 
 class LogProcessor(DataProcessor):
+    def __init__(self) -> None:
+        super().__init__()
+        self.data = None
+        self.is_valid = True
+        self.level = None
+        self.status = None
+
     def process(self, data: Any) -> str:
-        ...
+        print(f"Processing data: \"{data}\"")
+        self.data = data
+        if not self.validate(data):
+            self.is_valid = False
+            print("Validation: Data is not a Log")
+            return "error"
+        print("Validation: Log entry verified")
+        return "success"
 
     def validate(self, data: Any) -> bool:
-        ...
+        text_processor = TextProcessor()
+        if not text_processor.validate(data):
+            return False
+        self.level, self.status = self.separate(data)
+        if self.level == "" or self.status == "":
+            return False
+        return True
 
-    def format_ouput(self, result: str) -> str:
-        ...
+    def format_output(self, result: str) -> str:
+        if not self.is_valid:
+            print("No level detected")
+            return result
+        print(f"Output: [ALERT] {self.level} level", end=" ")
+        print(f"detected: {self.status}")
+        return result
+
+    def separate(self, data: Any) -> list[str | None] | None:
+        if not self.is_valid:
+            return
+        error_level = ""
+        status = ""
+        data_len = self.ft_len(data)
+        index = 0
+        while index < data_len:
+            if data[index] == ":":
+                status = self.get_status(data, index + 1)
+                break
+            error_level += data[index]
+            index += 1
+        return [error_level, status]
+
+    def get_status(self, data: Any, index: int) -> str | None:
+        if not self.is_valid:
+            return
+        status = ""
+        data_len = self.ft_len(data)
+        char = data[index]
+        while char == " " and index < data_len:
+            char = data[index]
+            index += 1
+        if data[index] != " " and data[index - 1] != ":":
+            index -= 1
+        while index < data_len:
+            status += data[index]
+            index += 1
+        return status
 
 
 def main() -> None:
-    text = TextProcessor()
-    text.process("Hello world 42")
+    data = "ERROR:System timeout"
+    log = LogProcessor()
+    log.process(data)
+    log.format_output("None")
 
 
 if __name__ == "__main__":
