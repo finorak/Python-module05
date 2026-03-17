@@ -8,6 +8,7 @@ class DataStream(ABC):
         super().__init__()
         self.stream_id = stream_id
         self.stream_type = stream_type
+        self.data_batch = None
         print(f"Sream ID: {self.stream_id}", end=", ")
         print(f"Type: {self.stream_type}")
 
@@ -79,6 +80,9 @@ class SensorStream(DataStream):
 
     def get_stats(self) -> Dict[str, Union[str, int, float]]:
         ...
+
+    def is_valid(self, data_batch: List[Any]) -> bool:
+        return True
 
 
 class TransactionStream(DataStream):

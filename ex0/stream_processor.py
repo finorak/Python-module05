@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Type, Self
 
 
 class DataProcessor(ABC):
@@ -62,7 +62,7 @@ class NumericProcessor(DataProcessor):
             pass
         return False
 
-    def format_output(self, result: str) -> str:
+    def format_output(self: Self, result: str) -> str:
         if not self.is_valid:
             print("Data provided is not a numeric")
             return ""
@@ -140,9 +140,9 @@ class TextProcessor(DataProcessor):
         return result
 
     def word_count(self, string: str | None, str_len: int) -> int:
-        counter = 0
-        index = 0
-        sep = ("\t", "\r", "\f", " ", "\v", "\n")
+        counter: int = 0
+        index: int = 0
+        sep: tuple = ("\t", "\r", "\f", " ", "\v", "\n")
         if string is None:
             return -1
         while index < str_len:
@@ -163,10 +163,10 @@ class TextProcessor(DataProcessor):
 class LogProcessor(DataProcessor):
     def __init__(self) -> None:
         super().__init__()
-        self.data = None
-        self.is_valid = True
-        self.level = None
-        self.status = None
+        self.data: Any = None
+        self.is_valid: bool = True
+        self.level: str | None = None
+        self.status: str | None = None
 
     def process(self, data: Any) -> str:
         print(f"Processing data: \"{data}\"")
@@ -182,7 +182,10 @@ class LogProcessor(DataProcessor):
         text_processor = TextProcessor()
         if not text_processor.validate(data):
             return False
-        self.level, self.status = self.separate(data)
+        separete = self.separate(data)
+        if separete is None:
+            return False
+        self.level, self.status = separete
         if self.level == "" or self.status == "":
             return False
         return True
