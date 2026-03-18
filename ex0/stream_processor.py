@@ -230,12 +230,46 @@ class LogProcessor(DataProcessor):
         return status
 
 
+def polymorphysme_test(data) -> None:
+    print("=== Polymorphic Processing Demo ===")
+    try:
+        index = 0
+        lst = [NumericProcessor(),
+               TextProcessor(),
+               LogProcessor()]
+        for process in lst:
+            print(f"Result {index}: ")
+            process.process(data)
+            process.format_output("None")
+            index += 1
+            print()
+    except Exception as e:
+        print(e)
+
+
 def main() -> None:
-    data = "ERROR:System timeout"
-    log = LogProcessor()
-    log.process(data)
-    log.format_output("None")
+    try:
+        data = [1, 2, 3, 4, 5]
+        numeric = NumericProcessor()
+        numeric.process(data)
+        numeric.format_output("None")
+        print()
+        data = "Hello Nexus World"
+        text = NumericProcessor()
+        text.process(data)
+        text.format_output("None")
+        print()
+        data = "ERROR:System timeout"
+        log = LogProcessor()
+        log.process(data)
+        log.format_output("None")
+        print()
+        polymorphysme_test(data)
+    except Exception as e:
+        print(e)
 
 
 if __name__ == "__main__":
     main()
+    print("Fondation systems online. Nexus ready for", end=" ")
+    print("advanced streams.")

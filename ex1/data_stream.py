@@ -8,7 +8,7 @@ class DataStream(ABC):
         super().__init__()
         self.stream_id = stream_id
         self.stream_type = stream_type
-        self.data_batch = None
+        self.data_batch: Any = None
         self.is_valid = True
         print(f"Sream ID: {self.stream_id}", end=", ")
         print(f"Type: {self.stream_type}")
@@ -31,7 +31,7 @@ class DataStream(ABC):
                 item += f"{data_batch[el]}"
                 filtered_data += [item]
         except Exception:
-            return None
+            raise Exception()
         return filtered_data
 
     @abstractmethod
@@ -106,23 +106,26 @@ class SensorStream(DataStream):
         return filtered_data
 
     def get_stats(self) -> Dict[str, Union[str, int, float]]:
-        stats = dict()
-        if not self.is_valid:
-            print("No stats available, run with the correct data...")
+        try:
+            stats = dict()
+            if not self.is_valid:
+                print("No stats available, run with the correct data...")
+                return stats
+            for el in self.data_batch:
+                separate = self.separate(el)
+                if separate is None:
+                    continue
+                item, value = separate
+                if not value or not item:
+                    continue
+                stats.update({item: value})
+            self.stats = stats
+            print("Sensor analysys", end=": ")
+            print(f"{self.ft_len(self.data_batch)}", end=" ")
+            print(f"readings processed, avg temp: {self.stats['temp']}°")
             return stats
-        for el in self.data_batch:
-            separate = self.separate(el)
-            if separate is None:
-                continue
-            item, value = separate
-            if not value or not item:
-                continue
-            stats.update({item: value})
-        self.stats = stats
-        print("Sensor analysys", end=": ")
-        print(f"{self.ft_len(self.data_batch)}", end=" ")
-        print(f"readings processed, avg temp: {self.stats['temp']}°")
-        return stats
+        except Exception:
+            raise Exception()
 
     def data_is_valid(self, data_batch: List[str]) -> bool:
         valid = False
@@ -155,6 +158,7 @@ class TransactionStream(DataStream):
 
     def process_batch(self, data_batch: List[Any]) -> str:
         self.data_batch = data_batch
+        print(f"Processing transaction batch: {self.data_batch}")
         if not self.data_is_valid(data_batch):
             self.is_valid = False
             return "Failure"
@@ -177,29 +181,32 @@ class TransactionStream(DataStream):
         return filtered_data
 
     def get_stats(self) -> Dict[str, Union[str, int, float]]:
-        stats = dict()
-        if not self.is_valid:
-            print("Couldn't process data so there is no", end=" ")
-            print("stats.... Run with correct data")
+        try:
+            stats = {}
+            if not self.is_valid:
+                print("Couldn't process data so there is no", end=" ")
+                print("stats.... Run with correct data")
+                return stats
+            for el in self.data_batch:
+                separate = self.separate(el)
+                if not separate:
+                    continue
+                item, value = separate
+                if value is None:
+                    raise ValueError()
+                value = self.ft_int(value)
+                if item in stats:
+                    stats[item] += value
+                else:
+                    stats[item] = value
+            net_flow = stats['buy'] - stats['sell']
+            profit = "+" if net_flow > 0 else ""
+            print("Transaction analysis", end=": ")
+            print(f"{self.ft_len(self.data_batch)} operations", end=", ")
+            print(f"net flow: {profit}{net_flow}")
             return stats
-        for el in self.data_batch:
-            separate = self.separate(el)
-            if not separate:
-                continue
-            item, value = separate
-            if value is None:
-                value = 0
-            value = self.ft_int(value)
-            if item in stats:
-                stats[item] += value
-            else:
-                stats.update({item: value})
-        net_flow = stats['buy'] - stats['sell']
-        profit = "+" if net_flow > 0 else "-"
-        print("Transaction analysis", end=": ")
-        print(f"{self.ft_len(self.data_batch)} operations", end=", ")
-        print(f"net flow: {profit}{net_flow}")
-        return stats
+        except Exception:
+            raise Exception()
 
     def data_is_valid(self, data_batch: List[Any]) -> bool:
         bought = False
@@ -224,7 +231,7 @@ class TransactionStream(DataStream):
 
     def ft_int(self, num: str | None) -> int:
         if num is None:
-            return 0
+            raise ValueError()
         value = 0
         digits = {
                 "0": 0,
@@ -240,7 +247,7 @@ class TransactionStream(DataStream):
                 }
         for el in num:
             if el not in digits:
-                return -1
+                raise ValueError()
             value = (value * 10) + (digits[el])
         return value
 
@@ -286,19 +293,22 @@ class EventStream(DataStream):
         return counter
 
     def get_stats(self) -> Dict[str, Union[str, int, float]]:
-        stats = dict()
-        error_count = 0
-        if not self.is_valid:
-            print("Not stats available due to corruped data")
+        try:
+            stats = dict()
+            error_count = 0
+            if not self.is_valid:
+                print("Not stats available due to corruped data")
+                return stats
+            for el in self.data_batch:
+                if el == "error":
+                    error_count += 1
+                stats[el] = error_count
+            print("Event analysis", end=": ")
+            print(f"{self.ft_len(self.data_batch)} events", end=", ")
+            print(f"{error_count} error detected")
             return stats
-        for el in self.data_batch:
-            if el == "error":
-                error_count += 1
-            stats[el] = error_count
-        print("Event analysis", end=": ")
-        print(f"{self.ft_len(self.data_batch)} events", end=", ")
-        print(f"{error_count} error detected")
-        return stats
+        except Exception:
+            raise Exception()
 
     def data_is_valid(self, data_batch: List[Any]) -> bool:
         try:
@@ -326,38 +336,44 @@ class StreamProcessor:
 
 
 def polymorphic_demonstration() -> None:
-    data = ["temp:3", "humidity:65", "pressure:1013"]
-    stream = StreamProcessor()
-    sensor = SensorStream("SENSOR_001")
-    transaction = TransactionStream("TRANS_001")
-    event = EventStream("EVENT_001")
-    stream.add_stream(sensor)
-    stream.add_stream(transaction)
-    stream.add_stream(event)
-    stream.process_all(data)
+    try:
+        data = ["temp:3", "humidity:65", "pressure:1013"]
+        stream = StreamProcessor()
+        sensor = SensorStream("SENSOR_001")
+        transaction = TransactionStream("TRANS_001")
+        event = EventStream("EVENT_001")
+        stream.add_stream(sensor)
+        stream.add_stream(transaction)
+        stream.add_stream(event)
+        stream.process_all(data)
+    except Exception as e:
+        print(e)
 
 
 def main() -> None:
-    print()
-    stream_id = "SENSOR_001"
-    data = ["temp:22.5", "humidity:65", "pressure:1013"]
-    sensor = SensorStream(stream_id)
-    sensor.process_batch(data)
-    sensor.get_stats()
-    print()
-    stream_id = "TRANS_001"
-    data = ["buy:100", "sell:150", "buy:75"]
-    transaction = TransactionStream(stream_id)
-    transaction.process_batch(data)
-    transaction.get_stats()
-    print()
-    stream_id = "EVENT_001"
-    data = ["login", "error", "logout"]
-    event = EventStream(stream_id)
-    event.process_batch(data)
-    event.get_stats()
-    print()
-    polymorphic_demonstration()
+    try:
+        print()
+        stream_id = "SENSOR_001"
+        data = ["temp:22.5", "humidity:65", "pressure:1013"]
+        sensor = SensorStream(stream_id)
+        sensor.process_batch(data)
+        sensor.get_stats()
+        print()
+        stream_id = "TRANS_001"
+        data = ["buy:100", "sell:150", "buy:75"]
+        transaction = TransactionStream(stream_id)
+        transaction.process_batch(data)
+        transaction.get_stats()
+        print()
+        stream_id = "EVENT_001"
+        data = ["login", "error", "logout"]
+        event = EventStream(stream_id)
+        event.process_batch(data)
+        event.get_stats()
+        print()
+        polymorphic_demonstration()
+    except Exception as e:
+        print(e)
 
 
 if __name__ == "__main__":
