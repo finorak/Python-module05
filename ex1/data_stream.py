@@ -14,7 +14,7 @@ class DataStream(ABC):
         print(f"Type: {self.stream_type}")
 
     @abstractmethod
-    def process_data(self, data_batch: List[Any]) -> str:
+    def process_batch(self, data_batch: List[Any]) -> str:
         ...
 
     @abstractmethod
@@ -81,7 +81,7 @@ class SensorStream(DataStream):
         self.is_valid = True
         self.stats: dict | None = None
 
-    def process_data(self, data_batch: List[Any]) -> str:
+    def process_batch(self, data_batch: List[Any]) -> str:
         self.data_batch = data_batch
         print(f"Processing sensor batch: {self.data_batch}")
         if not self.data_is_valid(data_batch):
@@ -153,7 +153,7 @@ class TransactionStream(DataStream):
         self.stream_id = stream_id
         self.filtered_data = None
 
-    def process_data(self, data_batch: List[Any]) -> str:
+    def process_batch(self, data_batch: List[Any]) -> str:
         self.data_batch = data_batch
         if not self.data_is_valid(data_batch):
             self.is_valid = False
@@ -255,7 +255,7 @@ class EventStream(DataStream):
                        "login"}
         self.is_valid = True
 
-    def process_data(self, data_batch: List[Any]) -> str:
+    def process_batch(self, data_batch: List[Any]) -> str:
         self.data_batch = data_batch
         print(f"Processing event batch: {self.data_batch}")
         if not self.data_is_valid(data_batch):
@@ -310,28 +310,52 @@ class EventStream(DataStream):
 
 class StreamProcessor:
     def __init__(self) -> None:
-        pass
+        self.streams: list[DataStream] = []
+
+    def add_stream(self, stream: DataStream) -> None:
+        self.streams += [stream]
+
+    def process_all(self, data: List[Any]):
+        for stream in self.streams:
+            print("-", stream.stream_id, "data", end=" ")
+            stream.process_batch(data)
+            stream.get_stats()
+            print()
+
+
+def polymorphic_demonstration() -> None:
+    data = ["temp:3", "humidity:65", "pressure:1013"]
+    stream = StreamProcessor()
+    sensor = SensorStream("SENSOR_001")
+    transaction = TransactionStream("TRANS_001")
+    event = EventStream("EVENT_001")
+    stream.add_stream(sensor)
+    stream.add_stream(transaction)
+    stream.add_stream(event)
+    stream.process_all(data)
 
 
 def main() -> None:
     print()
     stream_id = "SENSOR_001"
-    data = ["emp:22.5", "humidity:65", "pressure:1013"]
+    data = ["temp:22.5", "humidity:65", "pressure:1013"]
     sensor = SensorStream(stream_id)
-    sensor.process_data(data)
+    sensor.process_batch(data)
     sensor.get_stats()
     print()
     stream_id = "TRANS_001"
     data = ["buy:100", "sell:150", "buy:75"]
     transaction = TransactionStream(stream_id)
-    transaction.process_data(data)
+    transaction.process_batch(data)
     transaction.get_stats()
     print()
     stream_id = "EVENT_001"
     data = ["login", "error", "logout"]
     event = EventStream(stream_id)
-    event.process_data(data)
+    event.process_batch(data)
     event.get_stats()
+    print()
+    polymorphic_demonstration()
 
 
 if __name__ == "__main__":
