@@ -276,7 +276,7 @@ class EventStream(DataStream):
                 filtered_data += [f"{key}:{value}"]
             return filtered_data
         except Exception:
-            return None
+            raise Exception()
 
     def ft_count(self, data_batch: List[str], log: str) -> int:
         counter = 0
@@ -294,9 +294,11 @@ class EventStream(DataStream):
         for el in self.data_batch:
             if el == "error":
                 error_count += 1
+            stats[el] = error_count
         print("Event analysis", end=": ")
         print(f"{self.ft_len(self.data_batch)} events", end=", ")
         print(f"{error_count} error detected")
+        return stats
 
     def data_is_valid(self, data_batch: List[Any]) -> bool:
         try:
