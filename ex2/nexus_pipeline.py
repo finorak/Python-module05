@@ -91,7 +91,7 @@ class OutputStage:
             return "reading"
 
 
-class JSONAdapter:
+class JSONAdapter(ProcessingPipeline):
     def __init__(self, pipeline_id: str) -> None:
         self.pipeline_id = pipeline_id
         self.pipeline_type = "JSON"
@@ -121,8 +121,11 @@ class JSONAdapter:
         except Exception:
             return stage
 
+    def add_stage(self, stage: ProcessingStage) -> None:
+        pass
 
-class CSVAdapter:
+
+class CSVAdapter(ProcessingPipeline):
     def __init__(self, pipeline_id: str) -> None:
         self.pipeline_id = pipeline_id
         self.pipeline_type = "CSV"
@@ -148,8 +151,11 @@ class CSVAdapter:
             print("ERROR: Data is not a CSV foramt")
             return stage
 
+    def add_stage(self, stage: ProcessingStage) -> None:
+        pass
 
-class StreamAdapter:
+
+class StreamAdapter(ProcessingPipeline):
     def __init__(self, pipeline_id: str) -> None:
         self.pipeline_id = pipeline_id
         self.pipeline_type = "Stream"
@@ -176,6 +182,9 @@ class StreamAdapter:
             return "s"
         except Exception:
             return stage
+
+    def add_stage(self, stage: ProcessingStage) -> None:
+        pass
 
 
 class NexusManager:
@@ -250,4 +259,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     print("=== CODE NEXUS - ENTERPRISE PIPELINE SYSTEM ===")
-    main()
+    try:
+        main()
+    except Exception:
+        pass

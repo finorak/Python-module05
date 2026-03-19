@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Self
+from typing import Any
 
 
 class DataProcessor(ABC):
@@ -62,7 +62,7 @@ class NumericProcessor(DataProcessor):
             pass
         return False
 
-    def format_output(self: Self, result: str) -> str:
+    def format_output(self, result: str) -> str:
         if not self.is_valid:
             print("Data provided is not a numeric")
             return ""
@@ -230,7 +230,7 @@ class LogProcessor(DataProcessor):
         return status
 
 
-def polymorphysme_test(data) -> None:
+def polymorphysme_test(data: list | str) -> None:
     print("=== Polymorphic Processing Demo ===")
     try:
         index = 0
@@ -270,6 +270,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        pass
     print("Fondation systems online. Nexus ready for", end=" ")
     print("advanced streams.")

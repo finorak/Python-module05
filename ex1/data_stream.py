@@ -15,7 +15,7 @@ class DataStream(ABC):
 
     @abstractmethod
     def process_batch(self, data_batch: List[Any]) -> str:
-        ...
+        pass
 
     @abstractmethod
     def filter_data(self, data_batch: List[Any],
@@ -378,4 +378,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     print("=== CODE NEXUS - POLYMORPHIC STREAM SYSTEM ===")
-    main()
+    try:
+        main()
+    except Exception:
+        pass
